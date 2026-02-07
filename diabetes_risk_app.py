@@ -1,5 +1,5 @@
 import streamlit as st
-import datetime  # 用于时间戳
+import datetime
 
 # ==================== 页面核心配置 ====================
 st.set_page_config(
@@ -91,6 +91,24 @@ st.markdown("""
         text-align: center;
         font-size: 0.9rem;
     }
+    
+    /* 表单样式优化 */
+    .stForm {
+        background: var(--light);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+    }
+    
+    .form-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #E2E8F0;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,14 +132,13 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ==================== 智能预测引擎 (纯Python版) ====================
+# ==================== 智能预测引擎 ====================
 def advanced_risk_engine(user_inputs):
-    """高级风险预测引擎 - 纯Python实现，无任何外部依赖"""
+    """高级风险预测引擎 - 纯Python实现"""
     
-    # 初始化基础风险
     base_risk = 15.0
     
-    # 1. 年龄因素 (40岁以上每岁+0.5%)
+    # 1. 年龄因素
     if user_inputs['age'] > 40:
         base_risk += (user_inputs['age'] - 40) * 0.5
     
@@ -133,8 +150,8 @@ def advanced_risk_engine(user_inputs):
     if user_inputs['education'] == '低教育水平':
         base_risk += 10.0
     
-    # 4. 经济状况 (贫困指数越低风险越高)
-    poverty_factor = (3.0 - user_inputs['poverty']) * 2.5  # 3为中间值
+    # 4. 经济状况
+    poverty_factor = (3.0 - user_inputs['poverty']) * 2.5
     base_risk += max(0, poverty_factor)
     
     # 5. 医疗保险
@@ -165,9 +182,9 @@ def advanced_risk_engine(user_inputs):
     if user_inputs['cholesterol'] == '有':
         base_risk += 16.0
     
-    # 限制在5%-95%范围内
+    # 限制范围
     import random
-    random.seed(str(user_inputs))  # 确保相同输入得到相同结果
+    random.seed(str(user_inputs))
     final_risk = max(5.0, min(95.0, base_risk + random.uniform(-3, 3)))
     
     # 风险等级判定
@@ -217,56 +234,75 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📖 使用指南")
-    st.info("1. 填写左侧所有健康信息\n2. 点击'智能风险评估'\n3. 查看右侧个性化建议")
+    st.info("""
+    1. **填写信息**: 在主界面完整填写11项健康指标
+    2. **开始评估**: 点击"智能风险评估"按钮
+    3. **查看结果**: 获取风险等级和个性化建议
+    4. **专业咨询**: 高风险用户建议及时就医
+    """)
     
     st.markdown("---")
     st.markdown("### ⚠️ 重要声明")
-    st.warning("本工具仅为风险评估参考，不能替代专业医疗诊断。")
+    st.warning("本工具仅为健康风险评估工具，不能替代专业医疗诊断。如评估结果为高风险或有身体不适，请及时咨询执业医师。")
 
 # ==================== 主界面 ====================
 def main():
     col_input, col_result = st.columns([1, 1], gap="large")
     
-    # 左侧：信息输入
+    # 左侧：信息输入表单
     with col_input:
         st.markdown("### 📋 健康信息填写")
         
-        with st.form("risk_form"):
-            # 基本信息
+        # 创建表单 - 这是关键修复
+        with st.form("diabetes_risk_form", clear_on_submit=False):
+            # 分组1：基本信息
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 👤 基本信息")
             col_age, col_gender = st.columns(2)
             with col_age:
-                age = st.slider("年龄", 18, 100, 45)
+                age = st.slider("年龄", 18, 100, 45, help="请选择您的实际年龄")
             with col_gender:
-                gender = st.radio("性别", ["女性", "男性"], horizontal=True, index=1)
+                gender = st.radio("性别", ["女性", "男性"], index=1, horizontal=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
-            # 社会经济
+            # 分组2：社会经济状况
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 💼 社会经济状况")
-            education = st.selectbox("教育水平", ["高等教育", "中等教育", "低教育水平"])
-            poverty = st.slider("经济状况指数 (1-5)", 1.0, 5.0, 3.0, 0.1)
-            health_insurance = st.radio("健康保险", ["有", "无"], horizontal=True)
+            education = st.selectbox("教育水平", ["高等教育", "中等教育", "低教育水平"], index=0)
+            poverty = st.slider("贫困指数 (0=最贫困, 5=最富裕)", 0.0, 5.0, 2.5, 0.1)
+            health_insurance = st.radio("是否有健康保险", ["有", "无"], index=0, horizontal=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
-            # 生活方式
+            # 分组3：生活方式
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 🏃 生活方式")
-            activity = st.radio("体力活动", ["有规律活动", "无规律活动"], horizontal=True)
-            sleep = st.radio("睡眠状况", ["充足睡眠", "睡眠不足"], horizontal=True)
-            col_alc, col_sm = st.columns(2)
-            with col_alc:
-                alcohol = st.radio("饮酒", ["非重度饮酒", "重度饮酒"], horizontal=True)
-            with col_sm:
-                smoking = st.radio("吸烟", ["不吸烟", "吸烟"], horizontal=True)
+            activity = st.radio("体力活动", ["有规律活动", "无规律活动"], index=1, horizontal=True)
+            sleep = st.radio("睡眠状况", ["充足睡眠", "睡眠不足"], index=0, horizontal=True)
             
-            # 健康状况
+            col_alcohol, col_smoking = st.columns(2)
+            with col_alcohol:
+                alcohol = st.radio("饮酒习惯", ["非重度饮酒", "重度饮酒"], index=0, horizontal=True)
+            with col_smoking:
+                smoking = st.radio("吸烟情况", ["不吸烟", "吸烟"], index=0, horizontal=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # 分组4：健康状况
+            st.markdown('<div class="form-section">', unsafe_allow_html=True)
             st.markdown("#### 💊 健康状况")
-            col_ht, col_ch = st.columns(2)
-            with col_ht:
-                hypertension = st.radio("高血压", ["无", "有"], horizontal=True)
-            with col_ch:
-                cholesterol = st.radio("高胆固醇", ["无", "有"], horizontal=True)
+            col_hp, col_chol = st.columns(2)
+            with col_hp:
+                hypertension = st.radio("高血压病史", ["无", "有"], index=0, horizontal=True)
+            with col_chol:
+                cholesterol = st.radio("高胆固醇病史", ["无", "有"], index=0, horizontal=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
-            submitted = st.form_submit_button("🚀 智能风险评估", use_container_width=True)
+            # 提交按钮 - 这是修复的关键部分
+            st.markdown("---")
+            submitted = st.form_submit_button("🚀 智能风险评估", use_container_width=True, type="primary")
         
+        # 表单提交后的处理（在表单外部）
         if submitted:
+            # 收集所有输入数据
             user_inputs = {
                 'age': age, 'gender': gender, 'education': education,
                 'poverty': poverty, 'health_insurance': health_insurance,
@@ -274,52 +310,75 @@ def main():
                 'smoking': smoking, 'hypertension': hypertension,
                 'cholesterol': cholesterol
             }
+            
             st.session_state.user_inputs = user_inputs
             
-            with st.spinner("🔍 正在使用临床模型分析您的风险..."):
+            # 显示处理状态
+            with st.spinner("🔍 正在分析您的健康数据，请稍候..."):
                 result = advanced_risk_engine(user_inputs)
                 st.session_state.risk_result = result
             
-            st.success("✅ 评估完成！请查看右侧结果")
+            # 提示用户查看结果
+            st.success("✅ 风险评估完成！请查看右侧结果")
             st.rerun()
     
-    # 右侧：结果显示
+    # 右侧：风险评估结果
     with col_result:
         st.markdown("### 📊 风险评估结果")
         
         if st.session_state.risk_result:
             result = st.session_state.risk_result
             
-            # 风险概率
+            # 风险概率展示
             st.markdown(f"""
             <div style="text-align: center; margin-bottom: 1rem;">
                 <div class="metric-value">{result['probability']}%</div>
-                <div class="metric-label">未来糖尿病发生概率</div>
+                <div class="metric-label">糖尿病风险概率</div>
             </div>
             """, unsafe_allow_html=True)
             
-            # 风险等级
-            st.markdown(f'<div class="risk-tag {result["level_class"]}">{result["level"]}</div>', 
+            # 风险等级标签
+            st.markdown(f'<div class="risk-tag {result["level_class"]}">{result["level"]}</div>',
                        unsafe_allow_html=True)
             
-            # 进度条
-            st.progress(result['probability']/100, 
-                       text=f"风险程度：{result['probability']}%")
+            # 风险进度条
+            st.progress(result['probability'] / 100, text=f"风险程度：{result['probability']}%")
             
-            # 建议
-            st.markdown("#### 💡 个性化建议")
-            for rec in result['recommendations']:
-                st.markdown(f"- {rec}")
+            # 个性化建议
+            st.markdown("### 💡 个性化健康建议")
+            for idx, rec in enumerate(result['recommendations'], 1):
+                st.markdown(f"""
+                <div style="background: var(--light); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                    {rec}
+                </div>
+                """, unsafe_allow_html=True)
             
-            # 技术信息
-            with st.expander("📈 技术详情"):
-                st.write(f"**评估引擎**：{result['engine_version']}")
-                st.write(f"**评估时间**：{result['timestamp']}")
-                st.write("**输入摘要**：")
+            # 报告时间
+            st.markdown(f"""
+            <div style="margin-top: 1.5rem; color: var(--gray); font-size: 0.9rem;">
+                📅 报告生成时间：{result['timestamp']}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 查看详细输入
+            with st.expander("📋 查看我的输入信息"):
                 for key, value in result['input_summary'].items():
-                    st.write(f"  - {key}: {value}")
+                    st.write(f"**{key}**: {value}")
+                
         else:
-            st.info("👈 请先在左侧填写完整的健康信息，然后点击'智能风险评估'按钮。")
+            # 未评估时的提示
+            st.markdown("""
+            <div style="text-align: center; padding: 2rem 0; color: var(--gray);">
+                <h3>👈 请先填写左侧健康信息</h3>
+                <p style="margin-top: 1rem;">完整填写11项评估指标后，点击"智能风险评估"按钮获取结果</p>
+                <div style="margin-top: 2rem; padding: 1rem; background: var(--light); border-radius: 8px;">
+                    <p><strong>📌 填写提示：</strong></p>
+                    <p style="font-size: 0.9rem;">• 所有项目均为必填项</p>
+                    <p style="font-size: 0.9rem;">• 请根据实际情况准确填写</p>
+                    <p style="font-size: 0.9rem;">• 点击一次提交按钮即可</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 # 运行主程序
 main()
@@ -327,9 +386,11 @@ main()
 # ==================== 页脚 ====================
 st.markdown("""
 <div class="footer">
-    <p>© 2024 糖尿病风险智能预测系统 | 基于临床研究数据的风险评估工具</p>
-    <p style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.5rem;">
-    ⚠️ 免责声明：本工具提供的风险评估仅供参考，不构成医疗建议。如有健康问题请咨询专业医生。
-    </p>
+    <div style="margin-bottom: 0.5rem;">
+        本系统基于临床研究数据构建，旨在提供健康风险参考，不构成医疗建议
+    </div>
+    <div style="font-size: 0.8rem; opacity: 0.8;">
+        ⚠️ 免责声明：本工具仅为健康评估辅助手段，不能替代专业医生的诊断和治疗建议
+    </div>
 </div>
 """, unsafe_allow_html=True)
